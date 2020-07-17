@@ -1,6 +1,6 @@
 # TensorFlow Object Detection API with Coral Edge TPU
 
-This project uses the TensorFlow Object Detection API to train models suitable for the Google Coral Edge TPU. Follow the steps below to install the required programs and train your own models for use on the Edge TPU.
+This project uses the TensorFlow Object Detection API to train models suitable for the Google Coral Edge TPU. Follow the steps below to install the required programs and to train your own models for use on the Edge TPU.
 
 ## Installation
 
@@ -12,7 +12,7 @@ Follow these installation [steps](https://tensorflow-object-detection-api-tutori
 $ git clone https://github.com/goruck/models/tree/edge-tpu-train
 ```
 
-Check the ```requirements.txt``` file to ensure you have the nessary Python packages installed on your system or virtual environment. 
+Check the ```requirements.txt``` file to ensure you have the necessary Python packages installed on your system or virtual environment. 
 
 ### Setup Data Set Directories
 
@@ -66,23 +66,20 @@ item {
 }
 ```
 
-Note that the id 0 is reserved. Store this file in the ```annotations/<named-data-set>``` folder with the name ```label_map.pbtxt```.
+Note that id 0 is reserved. Store this file in the ```annotations/<named-data-set>``` folder with the name ```label_map.pbtxt```.
 
 ## Create TFRecord (.record)
 
 TFRecord is an important data format designed for Tensorflow. (Read more about it [here](https://www.tensorflow.org/tutorials/load_data/tf_records)). Before you can train your custom object detector, you must convert your data into the TFRecord format.
 
-Since you need to train as well as validate your model, the data set will be split into training (```train.record```) and validation sets (```val.record```). The purpose of training set is straight forward - it is the set of examples the model learns from. The validation set is a set of examples used DURING TRAINING to iteratively assess model accuracy.
+Since you need to train as well as validate your model, the data set will be split into training (```train.record```) and validation sets (```val.record```). The purpose of training set is straightforward - it is the set of examples the model learns from. The validation set is a set of examples used DURING TRAINING to iteratively assess model accuracy.
 
 Use the program [create_tf_record.py](./create_tf_record.py) to convert the data set into train.record and val.record.
 
-This program is preconfigured to do 70–30 train-val split. Execute it by running:
+This program is preconfigured to do 80–20 train-val split. Execute it by running:
 
 ```bash
-$ cd <path_to_your_tensorflow_installation>/models
-$ python3 ./create_tf_record.py \
---data_dir ./ \
---output_dir ./tf_record
+$ python3 ./create_tf_record.py --dataset_name <named-data-set>
 ```
 
 As configured above the program will store the ``.record`` files to the ```tf_record/<named-data-set>``` folder. 
@@ -104,8 +101,7 @@ If required (for example you are changing the number of classes from 7 used in t
 Follow the steps below to re-train the model replacing the values for ```pipline_config_path``` and ```num_training_steps``` as needed. I found 1400 training steps to be sufficient in this example. 
 
 ```bash
-$ cd <path_to_your_tensorflow_installation>/models
-$ retrain_detection_model.sh \
+$ train.sh \
 --pipeline_config_path ./configs/pipeline_mobilenet_v2_ssd_retrain_last_few_layers.config \
 --num_training_steps 1400
 ```
@@ -115,8 +111,7 @@ $ retrain_detection_model.sh \
 Start tensorboard in a new terminal:
 
 ```bash
-$ cd <path_to_your_tensorflow_installation>/models
-$ tensorboard --logdir ./train/
+$ tensorboard --logdir ./train
 ```
 
 ## Convert model to TF Lite and compile it for the edge tpu
@@ -126,9 +121,8 @@ Run the following script to export the model to a frozen graph, convert it to a 
 NB: this assumes the [Edge TPU Compiler](https://coral.withgoogle.com/docs/edgetpu/compiler/) has been installed on your system.
 
 ```bash
-$ cd <path_to_your_tensorflow_installation>/models
 $ convert_checkpoint_to_edgetpu.sh \
---pipeline_config_path ./configs/pipeline_mobilenet_v2_ssd_retrain_last_few_layers.config
+--pipeline_config_path ./configs/pipeline_mobilenet_v2_ssd_retrain_last_few_layers.config \
 --checkpoint_num 1400
 ```
 
