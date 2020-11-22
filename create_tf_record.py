@@ -39,10 +39,21 @@ NUM_TFRECORD_SHARDS = 1
 TRAIN_VAL_SPLIT = 0.8
 TFRECORD_TRAIN_NAME = 'train'
 TFRECORD_VAL_NAME = 'val'
+ALT_NAME_MAP = {
+    'lindo': 'person',
+    'nikki': 'person',
+    'eva': 'person',
+    'nico': 'person',
+    'unknown': 'person',
+    'polly': 'dog',
+    'rebel': 'cat',
+    'jack': 'cat'
+}
 
 def dict_to_tf_example(data,
                        label_map_dict,
                        image_subdirectory,
+                       use_alt_names=False,
                        ignore_difficult_instances=False):
     """Convert XML derived dict to tf.Example proto.
 
@@ -57,6 +68,8 @@ def dict_to_tf_example(data,
             Pascal dataset directory holding the actual image data.
         ignore_difficult_instances: Whether to skip difficult instances in the
             dataset  (default: False).
+        use_alt_names: Use class names that may be different than labels in images.
+            A translation map must be provided (default: False).
 
     Returns:
         example: The converted tf.Example.
@@ -107,7 +120,11 @@ def dict_to_tf_example(data,
             xmaxs.append(xmax / width)
             ymaxs.append(ymax / height)
             #class_name = get_class_name_from_filename(data['filename'])
-            class_name = obj['name']
+            if use_alt_names:
+                class_name = ALT_NAME_MAP.get(obj['name'], obj['name'])
+            else:
+                class_name = obj['name']
+            print(class_name, label_map_dict[class_name])
             classes_text.append(class_name.encode('utf8'))
             classes.append(label_map_dict[class_name])
             truncated.append(int(obj['truncated']))
@@ -141,7 +158,8 @@ def create_tf_record(output_filename,
                      label_map_dict,
                      annotations_dir,
                      image_dir,
-                     examples):
+                     examples,
+                     use_alt_names):
     """Creates a TFRecord file from examples.
 
     Args:
@@ -151,6 +169,7 @@ def create_tf_record(output_filename,
         annotations_dir: Directory where annotation files are stored.
         image_dir: Directory where image files are stored.
         examples: Examples to parse and save to tf record.
+        use_alt_names: use alternative class name mapping.
     """
 
     with contextlib2.ExitStack() as tf_record_close_stack:
@@ -173,9 +192,10 @@ def create_tf_record(output_filename,
                 data = dataset_util.recursive_parse_xml_to_dict(xml)['annotation']
                 try:
                     tf_example = dict_to_tf_example(
-                        data,
-                        label_map_dict,
-                        image_dir)
+                        data=data,
+                        label_map_dict=label_map_dict,
+                        image_subdirectory=image_dir,
+                        use_alt_names=use_alt_names)
 
                     if tf_example:
                         shard_idx = idx % num_shards
@@ -207,6 +227,8 @@ def main(args):
     label_map = os.path.join(args.root_dir, args.annotation_dir,
         args.dataset_name, args.label_map_name)
     logger.info(f'Label map: {label_map}')
+    use_alt_names = args.use_alt_names
+    logger.info(f'use alt names: {use_alt_names}')
 
     # Split data into training and validation sets.
     random.seed(42)
@@ -234,7 +256,8 @@ def main(args):
         label_map_dict,
         annotations_dir,
         image_dir,
-        train_examples)
+        train_examples,
+        use_alt_names)
     logger.info(f'Created training TFRecord: {train_output_path}')
 
     # Create validation TFRecord.
@@ -245,7 +268,8 @@ def main(args):
         label_map_dict,
         annotations_dir,
         image_dir,
-        val_examples)
+        val_examples,
+        use_alt_names)
     logger.info(f'Created validation TFRecord: {val_output_path}')
 
 if __name__ == '__main__':
@@ -268,6 +292,9 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_name', type=str,
         help='Name of dataset',
         required=True)
+    parser.add_argument('--use_alt_names', action='store_true',
+        help='Use alternative class names. Must match label_map_name.pbtxt')
+    parser.set_defaults(use_alt_names=False)
     args = parser.parse_args()
 
     logging.basicConfig(
