@@ -14,19 +14,20 @@ usage() {
   --pipeline_config_path - Path to pipeline config file (default .configs/radar-ml/pipeline_mobilenet_v2_ssd_retrain_last_few_layers.config).
   --train_dir - Path to train directory (default ./train).
   --checkpoint_num - Checkpoint number (default 0).
-  --output_dir - Output directory (default ./)
+  --output_dir - Output directory (default ./tflite-models/radar-ml)
   --help - Display this help.
 END_OF_USAGE
 }
 
 INPUT_TENSORS='normalized_input_image_tensor'
 OUTPUT_TENSORS='TFLite_Detection_PostProcess,TFLite_Detection_PostProcess:1,TFLite_Detection_PostProcess:2,TFLite_Detection_PostProcess:3'
+INPUT_SHAPES=1,300,300,3
 
 # Defaults - will get overridden if provided on cmd line.
 pipeline_config_path=./configs/radar-ml/pipeline_mobilenet_v2_ssd_retrain_last_few_layers.config
 train_dir=./train
 ckpt_number=0
-output_dir=./tflite_models/radar-ml
+output_dir=./tflite-models/radar-ml
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -69,7 +70,7 @@ tflite_convert \
   --output_arrays="${OUTPUT_TENSORS}" \
   --mean_values=128 \
   --std_dev_values=128 \
-  --input_shapes=1,300,300,3 \
+  --input_shapes="${INPUT_SHAPES}" \
   --change_concat_input_ranges=false \
   --allow_nudging_weights_to_use_fast_gemm_kernel=true \
   --allow_custom_ops
