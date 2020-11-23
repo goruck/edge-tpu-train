@@ -24,8 +24,9 @@ END_OF_USAGE
 }
 
 # Defaults - will get overridden if provided on cmd line.
+pipeline_config_path=./configs/radar-ml/pipeline_mobilenet_v2_ssd_retrain_last_few_layers.config
 train_dir=./train
-num_training_steps=8000
+num_training_steps=10000
 sample_1_of_n_eval_examples=1
 
 while [[ $# -gt 0 ]]; do
