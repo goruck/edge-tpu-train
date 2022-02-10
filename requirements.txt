@@ -38,7 +38,7 @@ scipy==1.4.1
 six==1.15.0
 tensorboard==1.15.0
 tensorboard-plugin-wit==1.7.0
-tensorflow==1.15.2
+tensorflow==2.5.3
 tensorflow-estimator==1.15.1
 termcolor==1.1.0
 tf-slim==1.1.0
